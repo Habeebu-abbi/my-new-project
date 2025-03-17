@@ -28,10 +28,18 @@ def login():
 
 def fetch_token():
     if "code" in st.query_params:
-        token = oauth.fetch_token("https://oauth2.googleapis.com/token", authorization_response=st.query_params["code"])
-        user_info = oauth.get("https://www.googleapis.com/oauth2/v3/userinfo").json()
-        st.session_state["user"] = user_info
-        return user_info
+        try:
+            token = oauth.fetch_token(
+                "https://oauth2.googleapis.com/token",
+                authorization_response=st.query_params["code"]
+            )
+            user_info = oauth.get("https://www.googleapis.com/oauth2/v3/userinfo").json()
+            st.session_state["user"] = user_info
+            return user_info
+        except Exception as e:
+            st.error(f"❌ OAuth Error: {e}")
+            st.error(f"Query Params: {st.query_params}")
+            return None
     return None
 
 # 🔹 Check if user is authenticated
@@ -68,6 +76,26 @@ def get_metabase_session():
         return response.json().get("id")
     except requests.exceptions.RequestException as e:
         st.error(f"❌ Authentication Failed! Error: {e}")
+        return None
+
+def fetch_metabase_data(query_id):
+    session_token = get_metabase_session()
+    if not session_token:
+        return None
+
+    query_url = f"{METABASE_URL}/api/card/{query_id}/query/json"
+    headers = {"X-Metabase-Session": session_token}
+
+    try:
+        response = requests.post(query_url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        if not data:
+            st.warning("⚠️ Query returned no data.")
+            return None
+        return pd.DataFrame(data)
+    except requests.exceptions.RequestException as e:
+        st.error(f"❌ Error fetching data: {e}")
         return None
 
 def fetch_metabase_data(query_id):
