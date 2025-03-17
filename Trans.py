@@ -19,10 +19,7 @@ METABASE_PASSWORD = st.secrets["METABASE_PASSWORD"]
 
 # Initialize OAuth2 session
 oauth = OAuth2Session(
-    CLIENT_ID,
-    CLIENT_SECRET,
-    redirect_uri=REDIRECT_URI,
-    scope=["openid", "email", "profile"]
+    CLIENT_ID, CLIENT_SECRET, redirect_uri=REDIRECT_URI, scope=["openid", "email", "profile"]
 )
 
 # Function to handle authentication
@@ -31,14 +28,21 @@ def login():
     st.session_state["oauth_state"] = state
     st.markdown(f"[Login with Google]({auth_url})")
 
+
 def fetch_token():
     if "code" in st.query_params:
         try:
+            # Construct the full authorization response URL
+            authorization_response = f"{REDIRECT_URI}?{requests.compat.urlencode(st.query_params)}"
+
+            # Fetch the token using the full authorization response
             token = oauth.fetch_token(
                 "https://oauth2.googleapis.com/token",
-                authorization_response=st.query_params["code"],
+                authorization_response=authorization_response,
                 grant_type="authorization_code"  # Explicitly specify the grant type
             )
+
+            # Fetch user info
             user_info = oauth.get("https://www.googleapis.com/oauth2/v3/userinfo").json()
             st.session_state["user"] = user_info
             return user_info
@@ -61,7 +65,7 @@ else:
 # 🔹 Restrict access to organization emails
 if user_info:
     email = user_info.get("email", "")
-    
+
     if not email.endswith(f"@{ALLOWED_DOMAIN}"):
         st.error("❌ Access Denied! Only allowed organization members can use this app.")
         st.stop()
@@ -82,45 +86,6 @@ def get_metabase_session():
         return response.json().get("id")
     except requests.exceptions.RequestException as e:
         st.error(f"❌ Authentication Failed! Error: {e}")
-        return None
-
-def fetch_metabase_data(query_id):
-    session_token = get_metabase_session()
-    if not session_token:
-        return None
-
-    query_url = f"{METABASE_URL}/api/card/{query_id}/query/json"
-    headers = {"X-Metabase-Session": session_token}
-
-    try:
-        response = requests.post(query_url, headers=headers)
-        response.raise_for_status()
-        data = response.json()
-        if not data:
-            st.warning("⚠️ Query returned no data.")
-            return None
-        return pd.DataFrame(data)
-    except requests.exceptions.RequestException as e:
-        st.error(f"❌ Error fetching data: {e}")
-        return None
-def fetch_metabase_data(query_id):
-    session_token = get_metabase_session()
-    if not session_token:
-        return None
-
-    query_url = f"{METABASE_URL}/api/card/{query_id}/query/json"
-    headers = {"X-Metabase-Session": session_token}
-
-    try:
-        response = requests.post(query_url, headers=headers)
-        response.raise_for_status()
-        data = response.json()
-        if not data:
-            st.warning("⚠️ Query returned no data.")
-            return None
-        return pd.DataFrame(data)
-    except requests.exceptions.RequestException as e:
-        st.error(f"❌ Error fetching data: {e}")
         return None
 
 
