@@ -10,7 +10,9 @@ from authlib.integrations.requests_client import OAuth2Session
 CLIENT_ID = st.secrets["CLIENT_ID"]
 CLIENT_SECRET = st.secrets["CLIENT_SECRET"]
 REDIRECT_URI = st.secrets["REDIRECT_URI"]
-ALLOWED_DOMAIN = st.secrets["ALLOWED_DOMAIN"]
+
+# 🔹 Allowed Emails (Loaded from Streamlit Secrets)
+ALLOWED_EMAILS = st.secrets["ALLOWED_EMAILS"].split(",")  # Convert to list
 
 # 🔹 Metabase credentials (Loaded from Streamlit Secrets)
 METABASE_URL = st.secrets["METABASE_URL"]
@@ -28,20 +30,19 @@ def login():
     st.session_state["oauth_state"] = state
     st.markdown(f"[Login with Google]({auth_url})")
 
-
 def fetch_token():
     if "code" in st.query_params:
         try:
             # Construct the full authorization response URL
             authorization_response = f"{REDIRECT_URI}?{requests.compat.urlencode(st.query_params)}"
-
+            
             # Fetch the token using the full authorization response
             token = oauth.fetch_token(
                 "https://oauth2.googleapis.com/token",
                 authorization_response=authorization_response,
                 grant_type="authorization_code"  # Explicitly specify the grant type
             )
-
+            
             # Fetch user info
             user_info = oauth.get("https://www.googleapis.com/oauth2/v3/userinfo").json()
             st.session_state["user"] = user_info
@@ -62,15 +63,17 @@ if not st.session_state["user"]:
 else:
     user_info = st.session_state["user"]
 
-# 🔹 Restrict access to organization emails
+# 🔹 Restrict access to specific emails
 if user_info:
     email = user_info.get("email", "")
-
-    if not email.endswith(f"@{ALLOWED_DOMAIN}"):
-        st.error("❌ Access Denied! Only allowed organization members can use this app.")
-        st.stop()
-    else:
+    st.write(f"Authenticated Email: {email}")  # Debugging: Print the email
+    
+    # Check if the email is in the allowed list
+    if email in ALLOWED_EMAILS:
         st.success(f"✅ Welcome, {email}!")
+    else:
+        st.error(f"❌ Access Denied! Your email ({email}) is not allowed.")
+        st.stop()
 else:
     st.warning("⚠️ Please log in to access the app.")
     st.stop()
@@ -88,6 +91,25 @@ def get_metabase_session():
         st.error(f"❌ Authentication Failed! Error: {e}")
         return None
 
+def fetch_metabase_data(query_id):
+    session_token = get_metabase_session()
+    if not session_token:
+        return None
+
+    query_url = f"{METABASE_URL}/api/card/{query_id}/query/json"
+    headers = {"X-Metabase-Session": session_token}
+
+    try:
+        response = requests.post(query_url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        if not data:
+            st.warning("⚠️ Query returned no data.")
+            return None
+        return pd.DataFrame(data)
+    except requests.exceptions.RequestException as e:
+        st.error(f"❌ Error fetching data: {e}")
+        return None
 
 def fetch_metabase_data(query_id):
     session_token = get_metabase_session()
