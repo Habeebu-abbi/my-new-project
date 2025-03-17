@@ -123,6 +123,11 @@ def fetch_metabase_data(query_id):
         response = requests.post(query_url, headers=headers)
         response.raise_for_status()
         data = response.json()
+        
+        # Debugging: Print the raw data
+        st.write("Raw Data from Metabase:")
+        st.write(data)
+        
         if not data:
             st.warning("⚠️ Query returned no data.")
             return None
