@@ -1,26 +1,21 @@
 import streamlit as st
 import requests
 import pandas as pd
-import os
 import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
-from dotenv import load_dotenv
 from authlib.integrations.requests_client import OAuth2Session
 
-# Load environment variables
-load_dotenv()
+# 🔹 Google OAuth Credentials (Loaded from Streamlit Secrets)
+CLIENT_ID = st.secrets["CLIENT_ID"]
+CLIENT_SECRET = st.secrets["CLIENT_SECRET"]
+REDIRECT_URI = st.secrets["REDIRECT_URI"]
+ALLOWED_DOMAIN = st.secrets["ALLOWED_DOMAIN"]
 
-# 🔹 Google OAuth Credentials (Loaded from .env file)
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-REDIRECT_URI = os.getenv("REDIRECT_URI")
-ALLOWED_DOMAIN = os.getenv("ALLOWED_DOMAIN")
-
-# 🔹 Metabase credentials
-METABASE_URL = os.getenv("METABASE_URL")
-METABASE_USERNAME = os.getenv("METABASE_USERNAME")
-METABASE_PASSWORD = os.getenv("METABASE_PASSWORD")
+# 🔹 Metabase credentials (Loaded from Streamlit Secrets)
+METABASE_URL = st.secrets["METABASE_URL"]
+METABASE_USERNAME = st.secrets["METABASE_USERNAME"]
+METABASE_PASSWORD = st.secrets["METABASE_PASSWORD"]
 
 # Initialize OAuth2 session
 oauth = OAuth2Session(CLIENT_ID, CLIENT_SECRET, redirect_uri=REDIRECT_URI, scope=["openid", "email", "profile"])
@@ -74,6 +69,27 @@ def get_metabase_session():
     except requests.exceptions.RequestException as e:
         st.error(f"❌ Authentication Failed! Error: {e}")
         return None
+
+def fetch_metabase_data(query_id):
+    session_token = get_metabase_session()
+    if not session_token:
+        return None
+
+    query_url = f"{METABASE_URL}/api/card/{query_id}/query/json"
+    headers = {"X-Metabase-Session": session_token}
+
+    try:
+        response = requests.post(query_url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        if not data:
+            st.warning("⚠️ Query returned no data.")
+            return None
+        return pd.DataFrame(data)
+    except requests.exceptions.RequestException as e:
+        st.error(f"❌ Error fetching data: {e}")
+        return None
+
 
 def fetch_metabase_data(query_id):
     session_token = get_metabase_session()
