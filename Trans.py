@@ -78,7 +78,7 @@ else:
     st.warning("⚠️ Please log in to access the app.")
     st.stop()
 
-# 🔹 Fetch data from Metabase (Example)
+# 🔹 Fetch data from Metabase
 def get_metabase_session():
     login_url = f"{METABASE_URL}/api/session"
     credentials = {"username": METABASE_USERNAME, "password": METABASE_PASSWORD}
@@ -88,27 +88,7 @@ def get_metabase_session():
         response.raise_for_status()
         return response.json().get("id")
     except requests.exceptions.RequestException as e:
-        st.error(f"❌ Authentication Failed! Error: {e}")
-        return None
-
-def fetch_metabase_data(query_id):
-    session_token = get_metabase_session()
-    if not session_token:
-        return None
-
-    query_url = f"{METABASE_URL}/api/card/{query_id}/query/json"
-    headers = {"X-Metabase-Session": session_token}
-
-    try:
-        response = requests.post(query_url, headers=headers)
-        response.raise_for_status()
-        data = response.json()
-        if not data:
-            st.warning("⚠️ Query returned no data.")
-            return None
-        return pd.DataFrame(data)
-    except requests.exceptions.RequestException as e:
-        st.error(f"❌ Error fetching data: {e}")
+        st.error(f"❌ Metabase Authentication Failed! Error: {e}")
         return None
 
 def fetch_metabase_data(query_id):
@@ -131,17 +111,30 @@ def fetch_metabase_data(query_id):
         if not data:
             st.warning("⚠️ Query returned no data.")
             return None
+        
+        # Ensure all columns have the same length
+        max_length = max(len(v) for v in data.values())
+        for key in data:
+            data[key] = data[key] + [None] * (max_length - len(data[key]))
+        
         return pd.DataFrame(data)
     except requests.exceptions.RequestException as e:
         st.error(f"❌ Error fetching data: {e}")
         return None
 
-QUERY_ID = 123  # Change to your Metabase Query ID
+# 🔹 Main App Logic
+QUERY_ID = 123  # Replace with your Metabase Query ID
 df = fetch_metabase_data(QUERY_ID)
 
 if df is not None:
-    st.dataframe(df)
+    st.write("### Data from Metabase")
+    st.dataframe(df)  # Display the DataFrame
 
+    # Example: Plotting with Plotly
+    if not df.empty:
+        st.write("### Example Plot")
+        fig = px.bar(df, x=df.columns[0], y=df.columns[1], title="Sample Bar Chart")
+        st.plotly_chart(fig)
 # Function to convert DataFrame to PNG
 def dataframe_to_image(df, title="App Not Deployed - Real Time Data"):
     fig, ax = plt.subplots(figsize=(10, 5))
