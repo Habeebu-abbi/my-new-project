@@ -18,7 +18,12 @@ METABASE_USERNAME = st.secrets["METABASE_USERNAME"]
 METABASE_PASSWORD = st.secrets["METABASE_PASSWORD"]
 
 # Initialize OAuth2 session
-oauth = OAuth2Session(CLIENT_ID, CLIENT_SECRET, redirect_uri=REDIRECT_URI, scope=["openid", "email", "profile"])
+oauth = OAuth2Session(
+    CLIENT_ID,
+    CLIENT_SECRET,
+    redirect_uri=REDIRECT_URI,
+    scope=["openid", "email", "profile"]
+)
 
 # Function to handle authentication
 def login():
@@ -31,7 +36,8 @@ def fetch_token():
         try:
             token = oauth.fetch_token(
                 "https://oauth2.googleapis.com/token",
-                authorization_response=st.query_params["code"]
+                authorization_response=st.query_params["code"],
+                grant_type="authorization_code"  # Explicitly specify the grant type
             )
             user_info = oauth.get("https://www.googleapis.com/oauth2/v3/userinfo").json()
             st.session_state["user"] = user_info
@@ -97,7 +103,6 @@ def fetch_metabase_data(query_id):
     except requests.exceptions.RequestException as e:
         st.error(f"❌ Error fetching data: {e}")
         return None
-
 def fetch_metabase_data(query_id):
     session_token = get_metabase_session()
     if not session_token:
