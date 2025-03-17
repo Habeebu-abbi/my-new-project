@@ -128,8 +128,14 @@ def fetch_metabase_data(query_id):
         st.error(f"❌ Error fetching data: {e}")
         return None
 
+QUERY_ID = 3021  # Change to your Metabase Query ID
+df = fetch_metabase_data(QUERY_ID)
+
+if df is not None:
+    st.dataframe(df)
+
 # Function to convert DataFrame to PNG
-def dataframe_to_image(df, title="Table"):
+def dataframe_to_image(df, title="App Not Deployed - Real Time Data"):
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.axis('tight')
     ax.axis('off')
@@ -157,105 +163,343 @@ st.sidebar.header("🔍 Query Settings")
 
 # User inputs Query IDs
 query_id_1 = st.sidebar.number_input("Enter Metabase Query ID (First Dataset)", min_value=1, value=3021, step=1)
+query_id_3 = st.sidebar.number_input("Enter Metabase Query ID (First Dataset)", min_value=1, value=3036, step=1)
+query_id_4 = st.sidebar.number_input("Enter Metabase Query ID (First Dataset)", min_value=1, value=3003, step=1)
 query_id_2 = st.sidebar.number_input("Enter Metabase Query ID (Second Dataset)", min_value=1, value=3023, step=1)
-query_id_3 = st.sidebar.number_input("Enter Metabase Query ID (Third Dataset)", min_value=1, value=3036, step=1)
-query_id_4 = st.sidebar.number_input("Enter Metabase Query ID (Fourth Dataset)", min_value=1, value=3003, step=1)
 
-# Fetch data for each query ID
+# Fetch data
 df_1 = fetch_metabase_data(query_id_1)
-df_2 = fetch_metabase_data(query_id_2)
 df_3 = fetch_metabase_data(query_id_3)
 df_4 = fetch_metabase_data(query_id_4)
+df_2 = fetch_metabase_data(query_id_2)
 
-# Display data for each query ID
+## ------------------- QUERY 1: VEHICLE SCHEDULE DATA -------------------
 if df_1 is not None:
-    st.write("### 🔹 Data from Query ID 1")
+    st.write("### 🔹 App Not Deployed - Real Time Data")
     st.dataframe(df_1)
 
     # Convert DataFrame to PNG
-    img_buffer = dataframe_to_image(df_1, title="Data from Query ID 1")
+    img_buffer = dataframe_to_image(df_1)
 
     # PNG Download Button
     st.download_button(
         label="📷 Download Table as PNG",
         data=img_buffer,
-        file_name="query_1_data.png",
+        file_name="app_not_deployed_real_time_data_1.png",
         mime="image/png"
     )
 
-    # Example: Plotting with Plotly
-    if not df_1.empty:
-        st.write("### Example Plot for Query ID 1")
-        fig = px.bar(df_1, x=df_1.columns[0], y=df_1.columns[1], title="Sample Bar Chart for Query ID 1")
-        st.plotly_chart(fig)
-else:
-    st.warning(f"⚠️ No data available for Query ID {query_id_1}.")
-
-if df_2 is not None:
-    st.write("### 🔹 Data from Query ID 2")
-    st.dataframe(df_2)
-
-    # Convert DataFrame to PNG
-    img_buffer = dataframe_to_image(df_2, title="Data from Query ID 2")
-
-    # PNG Download Button
-    st.download_button(
-        label="📷 Download Table as PNG",
-        data=img_buffer,
-        file_name="query_2_data.png",
-        mime="image/png"
+    # Bar Chart: Customer-wise Total Vehicle Count
+    st.subheader("📊 Customer-wise count of \"Not App Deployed\" for today")
+    df_1['Total Vehicles'] = pd.to_numeric(df_1['Total Vehicles'], errors='coerce')
+    df_customer_vehicles = df_1.groupby('Customer')['Total Vehicles'].sum().reset_index()
+    
+    fig_customer_bar = px.bar(
+        df_customer_vehicles, 
+        x='Customer', 
+        y='Total Vehicles', 
+        title="Total Vehicle Count per Customer", 
+        color='Total Vehicles', 
+        text_auto=True
     )
-
-    # Example: Plotting with Plotly
-    if not df_2.empty:
-        st.write("### Example Plot for Query ID 2")
-        fig = px.bar(df_2, x=df_2.columns[0], y=df_2.columns[1], title="Sample Bar Chart for Query ID 2")
-        st.plotly_chart(fig)
+    st.plotly_chart(fig_customer_bar, key="plotly_chart_1")  # ✅ Added unique key
 else:
-    st.warning(f"⚠️ No data available for Query ID {query_id_2}.")
+    st.warning(f"⚠️ No data found for Query ID {query_id_1}.")
 
+## ------------------- QUERY 3: VEHICLE SCHEDULE DATA -------------------
 if df_3 is not None:
-    st.write("### 🔹 Data from Query ID 3")
+    st.write("### 🔹 Accepted Trips - Real Time Data")  # Differentiate title
     st.dataframe(df_3)
 
     # Convert DataFrame to PNG
-    img_buffer = dataframe_to_image(df_3, title="Data from Query ID 3")
+    img_buffer = dataframe_to_image(df_3)
 
     # PNG Download Button
     st.download_button(
         label="📷 Download Table as PNG",
         data=img_buffer,
-        file_name="query_3_data.png",
+        file_name="accepted_trips_real_time_data.png",  # Unique filename
         mime="image/png"
     )
 
-    # Example: Plotting with Plotly
-    if not df_3.empty:
-        st.write("### Example Plot for Query ID 3")
-        fig = px.bar(df_3, x=df_3.columns[0], y=df_3.columns[1], title="Sample Bar Chart for Query ID 3")
-        st.plotly_chart(fig)
+    # Bar Chart: Customer-wise Total Vehicle Count
+    st.subheader("📊 Customer-wise count of \"Accepted trip\" for today")
+    df_3['Total Vehicles'] = pd.to_numeric(df_3['Total Vehicles'], errors='coerce')  # Corrected reference
+    df_customer_vehicles = df_3.groupby('Customer')['Total Vehicles'].sum().reset_index()  # Corrected reference
+    
+    fig_customer_bar = px.bar(
+        df_customer_vehicles, 
+        x='Customer', 
+        y='Total Vehicles', 
+        title="Total Vehicle Count per Customer", 
+        color='Total Vehicles', 
+        text_auto=True
+    )
+    st.plotly_chart(fig_customer_bar, key="plotly_chart_3")  # ✅ Added unique key
 else:
-    st.warning(f"⚠️ No data available for Query ID {query_id_3}.")
+    st.warning(f"⚠️ No data found for Query ID {query_id_3}.")
 
-if df_4 is not None:
-    st.write("### 🔹 Data from Query ID 4")
-    st.dataframe(df_4)
+# Check if both dataframes exist
+if df_1 is not None and df_3 is not None:
+    # Remove existing "Grand Total" rows from df_1 and df_3
+    df_1["Duty Type"] = df_1["Duty Type"].astype(str)
+    df_3["Duty Type"] = df_3["Duty Type"].astype(str)
+
+    df_1_filtered = df_1[df_1["Duty Type"] != "Grand Total"].copy()
+    df_3_filtered = df_3[df_3["Duty Type"] != "Grand Total"].copy()
+
+    # Add Status column
+    df_1_filtered["Status"] = "New"
+    df_3_filtered["Status"] = "Accepted"
+
+    # Ensure 'Total Vehicles' is numeric
+    df_1_filtered["Total Vehicles"] = pd.to_numeric(df_1_filtered["Total Vehicles"], errors="coerce")
+    df_3_filtered["Total Vehicles"] = pd.to_numeric(df_3_filtered["Total Vehicles"], errors="coerce")
+
+    # Compute grand total for Total Vehicles
+    total_vehicles_sum = df_1_filtered["Total Vehicles"].sum() + df_3_filtered["Total Vehicles"].sum()
+
+    # Combine DataFrames
+    df_combined = pd.concat([df_1_filtered, df_3_filtered], ignore_index=True)
+
+    # Create a single Grand Total row at the bottom (without unnecessary columns)
+    grand_total_row = pd.DataFrame({
+        "Duty Type": [""],  
+        "Customer": [""],
+        "Hub": [""],
+        "Spocs": [""],
+        "Driver": [""],
+        "Scheduled At Time": [""],
+        "Started At Time": [""],
+        "Total Vehicles": [total_vehicles_sum],  # Only keeping total sum
+        "Status": [""]
+    })
+
+    # Append only one Grand Total row at the end
+    df_combined = pd.concat([df_combined, grand_total_row], ignore_index=True)
+
+    # Ensure that there are no duplicate or misplaced Grand Total rows
+    df_combined = df_combined[~df_combined["Customer"].str.contains("Grand Total", na=False)]
+
+    # Display the cleaned-up DataFrame
+    st.write("### 🔹 Combined Vehicle Schedule Data")
+    st.dataframe(df_combined)
 
     # Convert DataFrame to PNG
-    img_buffer = dataframe_to_image(df_4, title="Data from Query ID 4")
+    img_buffer = dataframe_to_image(df_combined)
 
     # PNG Download Button
     st.download_button(
         label="📷 Download Table as PNG",
         data=img_buffer,
-        file_name="query_4_data.png",
+        file_name="combined_vehicle_schedule_data.png",
         mime="image/png"
     )
 
-    # Example: Plotting with Plotly
-    if not df_4.empty:
-        st.write("### Example Plot for Query ID 4")
-        fig = px.bar(df_4, x=df_4.columns[0], y=df_4.columns[1], title="Sample Bar Chart for Query ID 4")
-        st.plotly_chart(fig)
+if df_4 is not None and df_2 is not None:
+    # Convert "Scheduled At" from string to datetime (correct format)
+    df_4["Scheduled At"] = pd.to_datetime(df_4["Scheduled At"], format="%d-%b-%Y", errors="coerce").dt.date
+    df_2["Scheduled At"] = pd.to_datetime(df_2["Scheduled At"], format="%d-%b-%Y", errors="coerce").dt.date
+
+    # Remove NaN values after conversion
+    df_4 = df_4.dropna(subset=["Scheduled At"])
+    df_2 = df_2.dropna(subset=["Scheduled At"])
+
+    # Get the current month and year
+    current_month = pd.Timestamp.today().month
+    current_year = pd.Timestamp.today().year
+
+    # Filter only current month data
+    df_4 = df_4[df_4["Scheduled At"].apply(lambda x: x.month == current_month and x.year == current_year)]
+    df_2 = df_2[df_2["Scheduled At"].apply(lambda x: x.month == current_month and x.year == current_year)]
+
+    # Count vehicles per date
+    deployed_vehicles = df_4.groupby("Scheduled At")["Vehicle"].count().reset_index(name="Deployed Vehicles")
+    non_deployed_vehicles = df_2.groupby("Scheduled At")["Vehicle"].count().reset_index(name="Non-Deployed Vehicles")
+
+    # Merge both counts
+    merged_df = pd.merge(deployed_vehicles, non_deployed_vehicles, on="Scheduled At", how="outer").fillna(0)
+
+    # Calculate App Deployment %
+    merged_df["Total Vehicles"] = merged_df["Deployed Vehicles"] + merged_df["Non-Deployed Vehicles"]
+    merged_df["App Deployment%"] = (merged_df["Deployed Vehicles"] / merged_df["Total Vehicles"]) * 100
+
+    # Calculate the overall average App Deployment%
+    overall_average_deployment = merged_df["App Deployment%"].mean()
+
+    # Convert percentages to integer format and append '%'
+    merged_df["App Deployment%_str"] = merged_df["App Deployment%"].astype(int).astype(str) + "%"
+
+    # Display result in Streamlit
+    st.subheader("📊 App Deployment Analysis")
+    st.dataframe(merged_df[["Scheduled At", "Deployed Vehicles", "Non-Deployed Vehicles", "Total Vehicles", "App Deployment%_str"]])
+
+    # Display overall average separately
+    st.markdown(f"**📊 Overall Average Deployment%:** {int(overall_average_deployment)}%")
+    
+    # Convert 'Scheduled At' to the desired format
+    merged_df["Scheduled At"] = pd.to_datetime(merged_df["Scheduled At"]).dt.strftime("%d %B")
+
+
+    # Set the formatted column as the index and plot the bar chart
+    st.subheader("📊 App Deployment% Over Time")
+    st.bar_chart(merged_df.set_index("Scheduled At")["App Deployment%"])
+
+
+
+## ------------------- QUERY 2: TRIP DATA -------------------
+if df_2 is not None:
+    st.write("### 🚚 Current month's raw data for \"App Not Deployed\"")
+    st.dataframe(df_2)
+
+    # Bar Chart: Number of Trips per Hub
+    st.subheader("📊 Number of Trips per Hub")
+    df_hub_trips = df_2.groupby('Hub').size().reset_index(name='Trip Count')
+    fig_hub_bar = px.bar(
+        df_hub_trips, 
+        x='Hub', 
+        y='Trip Count', 
+        title="Trips per Hub", 
+        color='Trip Count', 
+        text_auto=True
+    )
+    st.plotly_chart(fig_hub_bar)
+
+    # Count Unique Drivers and Their Trip Counts
+    st.subheader("🚛 Driver-wise Trip Count for \"App Not Deployed\" in the Current Month")
+    df_driver_trips = df_2.groupby('Driver').size().reset_index(name='Total Trips')
+    st.dataframe(df_driver_trips)
+
+    # Bar Chart: Driver-wise Trip Count
+    fig_driver_bar = px.bar(
+        df_driver_trips, 
+        x='Driver', 
+        y='Total Trips', 
+        title="Trips per Driver", 
+        color='Total Trips', 
+        text_auto=True
+    )
+    st.plotly_chart(fig_driver_bar)
+
+    # SPOC-wise Trip Count
+    st.subheader("👤 SPOC-wise Trip Count \"App Not Deployed\" in the Current Month")
+    if 'Spoc' in df_2.columns:
+        df_spoc_trips = df_2.groupby('Spoc').size().reset_index(name='Total Trips')
+        st.dataframe(df_spoc_trips)
+
+        # Bar Chart: SPOC-wise Trip Count
+        fig_spoc_bar = px.bar(
+            df_spoc_trips, 
+            x='Spoc', 
+            y='Total Trips', 
+            title="Trips per SPOC", 
+            color='Total Trips', 
+            text_auto=True
+        )
+        st.plotly_chart(fig_spoc_bar)
+    else:
+        st.warning("⚠️ No 'Spoc' column found in the dataset.")
 else:
-    st.warning(f"⚠️ No data available for Query ID {query_id_4}.")
+    st.warning(f"⚠️ No data found for Query ID {query_id_2}.")
+
+## ------------------- DRIVERS WHO DID NOT DEPLOY THE APP (YESTERDAY & TODAY) -------------------
+if df_1 is not None and df_2 is not None:
+    if 'Driver' in df_1.columns and 'Driver' in df_2.columns:
+        st.success("✅ 'Driver' column exists in both datasets.")
+        
+        if 'Scheduled At' in df_2.columns:
+            st.success("✅ 'Scheduled At' column exists in Query 3023.")
+            df_2['Scheduled At'] = pd.to_datetime(df_2['Scheduled At'], errors='coerce')
+            yesterday = (pd.Timestamp.today() - pd.Timedelta(days=1)).date()
+            df_2_yesterday = df_2[df_2['Scheduled At'].dt.date == yesterday]
+            
+            drivers_3021 = set(df_1['Driver'].dropna().unique())
+            drivers_3023_yesterday = set(df_2_yesterday['Driver'].dropna().unique())
+            
+            common_drivers = sorted(drivers_3021.intersection(drivers_3023_yesterday))
+            
+            if common_drivers:
+                st.subheader("🚚 Drivers who have not deployed the app yesterday and today")
+                st.write(common_drivers)
+            else:
+                st.warning("⚠️ No matching drivers found for yesterday's data.")
+        else:
+            st.warning("⚠️ 'Scheduled At' column not found in Query 3023.")
+    else:
+        st.warning("⚠️ 'Driver' column not found in one of the datasets.")
+if df_2 is not None:
+    if {'Customer', 'Driver', 'Spoc', 'Scheduled At'}.issubset(df_2.columns):
+        st.subheader("📅 Drivers who have not deployed the app in the last 7 days")
+        
+        # Define last 7 days
+        last_7_days = [(pd.Timestamp.today() - pd.Timedelta(days=i)).date() for i in range(6, -1, -1)]
+        
+        # Ensure 'Scheduled At' column is in datetime format
+        df_2['Scheduled At'] = pd.to_datetime(df_2['Scheduled At'], errors='coerce')
+
+        # Convert 'Scheduled At' to date before filtering
+        df_filtered = df_2[df_2['Scheduled At'].dt.date.isin(last_7_days)]
+        
+        # Create pivot table for last 7 days
+        df_pivot = df_filtered.pivot_table(
+            index=['Customer', 'Driver', 'Spoc'], 
+            columns='Scheduled At', 
+            aggfunc='size', 
+            fill_value=0
+        ).reset_index()
+        
+        # Rename columns
+        df_pivot.columns.name = None
+        df_pivot.rename(columns=lambda x: str(x) if isinstance(x, pd.Timestamp) else x, inplace=True)
+
+        # Add Grand Total row
+        total_row = df_pivot.select_dtypes(include=['number']).sum()
+        total_row['Customer'] = 'Grand Total'
+        total_row['Driver'] = ''
+        total_row['Spoc'] = ''
+        df_pivot = pd.concat([df_pivot, pd.DataFrame([total_row])], ignore_index=True)
+
+        # Display Pivot Table
+        st.dataframe(df_pivot)
+
+        # Melt the pivot table to long format for visualization
+        df_melted = df_pivot.melt(id_vars=['Customer', 'Driver', 'Spoc'], var_name='Date', value_name='Count')
+
+        # Remove Grand Total row from visualization
+        df_melted = df_melted[df_melted['Customer'] != 'Grand Total']
+
+        fig = px.bar(
+            df_melted, 
+            x='Date',
+            y='Count',
+            color='Driver',
+            barmode='group',
+            title="📊 Driver Schedule Count Over the Last 7 Days",
+            labels={'Date': 'Scheduled Date', 'Count': 'Number of Assignments'},
+            height=500
+        )
+
+        # Display the chart in Streamlit
+        st.plotly_chart(fig, use_container_width=True)
+
+
+        # ------------------- CURRENT DATE DATA -------------------
+        st.subheader("📆 Drivers who have not deployed the app today after trip completion")
+
+        # Filter data for today
+        today_date = pd.Timestamp.today().date()
+        df_today = df_2[df_2['Scheduled At'].dt.date == today_date]
+
+        # Count occurrences of (Customer, Driver, Spoc)
+        df_today_summary = df_today.groupby(['Customer', 'Driver', 'Spoc']).size().reset_index(name='Count')
+
+        # Add Grand Total row
+        total_count = df_today_summary['Count'].sum()
+        grand_total_row = pd.DataFrame([{'Customer': 'Grand Total', 'Driver': '', 'Spoc': '', 'Count': total_count}])
+        # Append Grand Total to the dataframe
+        df_today_summary = pd.concat([df_today_summary, grand_total_row], ignore_index=True)
+        # Display Today's Data
+        st.dataframe(df_today_summary)
+
+    else:
+        st.warning("⚠️ Required columns ('Customer', 'Driver', 'Spoc', 'Scheduled At') not found in dataset.")
