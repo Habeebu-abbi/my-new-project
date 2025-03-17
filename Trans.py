@@ -123,7 +123,7 @@ def fetch_metabase_data(query_id):
         return None
 
 # 🔹 Main App Logic
-QUERY_ID = 123  # Replace with your Metabase Query ID
+QUERY_ID = 2904  # Replace with your Metabase Query ID
 df = fetch_metabase_data(QUERY_ID)
 
 if df is not None:
